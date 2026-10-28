@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+py-modules = ["models", "subagents", "async_research"]
+packages = ["tools"]
+
+[project]
+name = "deep-sales-assistant"
+version = "0.1.0"
+description = "Build a sandboxed AI sales agent with LangChain Deep Agents."
+readme = "README.md"
+requires-python = ">=3.11,<3.15"
+
+dependencies = [
+    "deepagents==0.7.0",
+    "langgraph>=1.0.0,<2.0",
+    "langchain>=1.0.0,<2.0",
+    "langchain-core>=1.3.3,<2.0",
+    "langchain-anthropic",
+    "langgraph-cli[inmem]>=0.4.0",
+    "python-dotenv",
+    "langsmith[sandbox]",
+    "langchain-quickjs",
+    "langchain-mcp-adapters",
+    "tavily-python",
+    "markdown",
+    "nh3",
+]
+
+[tool.ruff]
+lint.select = ["E", "F", "I", "UP"]
+lint.ignore = ["T201", "E501", "UP006", "UP007", "E402"]
+
+[dependency-groups]
+dev = [
+    "ruff>=0.15.17",
+]
