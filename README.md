@@ -16,6 +16,16 @@ Everything the agent writes or runs happens inside its own **LangSmith
 sandbox**, a separate cloud machine for each conversation, so nothing touches
 your computer's files.
 
+<p align="center">
+  <img src="docs/assets/how-it-works.svg" width="100%"
+       alt="Animated diagram: Jane asks for the newsletter; the main agent starts newsletter-agent in the background, where four genre researchers run in parallel. Meanwhile Jane asks for a territory report, and the main agent writes and runs a chart script in its LangSmith sandbox. When Jane asks if the newsletter is ready, the main agent collects it with check_async_task and saves it to /outputs.">
+</p>
+
+<p align="center"><sub>
+  The newsletter is researched in the background while the main agent keeps
+  working in its own sandbox. <a href="docs/tutorial/06-background-newsletter.md">How it works →</a>
+</sub></p>
+
 ## What you'll learn
 
 - **Deep Agents** (`create_deep_agent`): planning, a virtual filesystem, and
