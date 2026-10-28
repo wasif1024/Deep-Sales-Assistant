@@ -33,7 +33,13 @@ dependencies = [
 lint.select = ["E", "F", "I", "UP"]
 lint.ignore = ["T201", "E501", "UP006", "UP007", "E402"]
 
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = [".", "mail_server"]
+filterwarnings = ["ignore:'asyncio.iscoroutinefunction' is deprecated:DeprecationWarning"]
+
 [dependency-groups]
 dev = [
     "ruff>=0.15.17",
+    "pytest>=8",
 ]

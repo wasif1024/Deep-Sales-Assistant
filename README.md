@@ -1,5 +1,9 @@
 # Deep Sales Assistant
 
+[![CI](https://github.com/wasif1024/Deep-Sales-Assistant/actions/workflows/ci.yml/badge.svg)](https://github.com/wasif1024/Deep-Sales-Assistant/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+![Python 3.11–3.14](https://img.shields.io/badge/python-3.11%E2%80%933.14-blue)
+
 **Build a sandboxed AI sales agent with LangChain Deep Agents.**
 
 Deep Sales Assistant handles day-to-day sales work for Jane, a sales rep at
@@ -241,9 +245,18 @@ uv run python mail_server/send_to_inbox.py \
 # Stop any sandboxes that are still running (start.sh does this on exit)
 uv run python stop_sandboxes.py
 
-# Lint
+# Lint and test
 uv run ruff check .
+uv run pytest
 ```
+
+**Tests.** The tests in `tests/` need no API keys and make no model or
+sandbox calls, so they're fast and free. They check the SQL guardrails
+(writes rejected, inserts parameterized, new customers assigned to Jane),
+HTML sanitizing, the mock mailbox (no send tool), approval gates on the right
+subagents, the skills' front matter, and that both graphs load. GitHub
+Actions runs them on Python 3.11 and 3.14, and lints and builds the chat UI,
+on every push and pull request.
 
 **Traces.** With `LANGSMITH_TRACING=true`, every run is recorded in
 [LangSmith](https://smith.langchain.com) under the `deep-sales-assistant`
@@ -346,6 +359,8 @@ deep-sales-assistant/
 ├── mail_server/              # Mock mail MCP server + sample email
 ├── data/chinook.db           # Sample music-store database
 ├── ui/                       # Chat UI (modified agent-chat-ui)
+├── tests/                    # pytest suite (no API keys needed)
+├── .github/workflows/ci.yml  # Lint, test, and UI build on every push
 ├── langgraph.json            # Graphs the LangGraph server loads
 ├── start.sh                  # Starts everything
 └── stop_sandboxes.py         # Stops this project's sandboxes
