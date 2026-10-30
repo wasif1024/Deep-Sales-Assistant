@@ -218,6 +218,16 @@ What to expect:
 The first message in a thread takes a few extra seconds while its sandbox is
 created.
 
+<p align="center">
+  <img src="docs/assets/quote-preview.svg" width="100%"
+       alt="A quote for Jennifer Peterson at Rogers Canada: 30 Rock tracks and 30 Metal tracks at $0.99 each, subtotal $59.40, a 10% volume discount of $5.94, total $53.46. Beside it, the steps: prices looked up by chinook-analyst, numbers checked by quote-reviewer, and the draft reply paused for Jane to approve, edit, or reject. Below, the evaluators that check every quote: quote_accuracy, tool_call_order, and draft_quality.">
+</p>
+
+<p align="center"><sub>
+  Illustration of a quote at the approval step, priced from <code>data/chinook.db</code>.
+  In the app, the draft appears as an approval card in the chat.
+</sub></p>
+
 ### 2. Get a territory report
 
 > Give me a territory report for my accounts.
@@ -225,6 +235,16 @@ created.
 The agent gathers the numbers, writes a Markdown report, then writes and runs
 a Python script in the sandbox to draw a pie chart. The chart appears in the
 chat, and both files can be downloaded from the sandbox files panel.
+
+<p align="center">
+  <img src="docs/assets/territory-board.svg" width="100%"
+       alt="Territory overview for Jane Peacock: 24 customers (21 have purchased), $833.04 lifetime revenue, 146 invoices, $5.71 average invoice. A bar chart of revenue by year from 2021 to 2025 peaks at $221.92 in 2022. A genre mix donut: Rock 36%, Latin 17%, Metal 10%, Alternative and Punk 8%, other genres 29%. The top five customers by revenue, led by Ladislav Kovács and Hugh O'Reilly at $45.62 each. Two writes wait for approval: add_customer for Priya Raman and a quote draft. A sidebar lists the four specialists and three playbooks.">
+</p>
+
+<p align="center"><sub>
+  Illustration of the figures the territory-report playbook gathers, drawn from Jane's
+  real accounts in <code>data/chinook.db</code>.
+</sub></p>
 
 ### 3. Create the newsletter (needs Tavily)
 
@@ -421,6 +441,8 @@ deep-sales-assistant/
 ├── ui/                       # Chat UI (modified agent-chat-ui)
 ├── evaluations.py            # LangSmith evaluation runner and evaluators
 ├── evals/                    # Regression dataset, upload and compare scripts
+├── docs/                     # Tutorial chapters and README images
+│   └── assets/               # make_*.py regenerate the SVGs from the data
 ├── tests/                    # pytest suite (no API keys needed)
 ├── .github/workflows/ci.yml  # Lint, test, and UI build on every push
 ├── langgraph.json            # Graphs the LangGraph server loads
