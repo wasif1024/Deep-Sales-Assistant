@@ -273,6 +273,22 @@ on every push and pull request.
 project. A trace shows every model call, tool call, subagent call, and
 approval.
 
+**Evaluations.** Build a LangSmith dataset from representative tasks and
+observed traces, then add `question` to each example's inputs and optional
+`required_tools` and `required_facts` lists to its outputs. Tool names should
+come from real traces; required facts are checked as case-insensitive literal
+text in the final answer. Run the local LangGraph server first, then evaluate:
+
+```bash
+uv run python evaluations.py --dataset deep-sales-assistant-regression
+```
+
+The experiment records the final answer and tool calls observed from streamed
+graph and subgraph events, then scores tool selection and required facts
+separately. Review low-scoring examples and their LangSmith traces, update the
+agent or dataset, and rerun the experiment to check for regressions. Use
+`--url` or `LANGGRAPH_URL` if the server is not at `http://127.0.0.1:2024`.
+
 **Switching models.** Edit `models.py`. `model` is used by the lighter
 subagents and `strong_model` by the main agent and quote-reviewer. Any
 [LangChain chat model](https://python.langchain.com/docs/integrations/chat/)
