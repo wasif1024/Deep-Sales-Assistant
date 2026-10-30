@@ -218,6 +218,16 @@ What to expect:
 The first message in a thread takes a few extra seconds while its sandbox is
 created.
 
+<p align="center">
+  <img src="docs/assets/quote-preview.svg" width="100%"
+       alt="A quote for Jennifer Peterson at Rogers Canada: 30 Rock tracks and 30 Metal tracks at $0.99 each, subtotal $59.40, a 10% volume discount of $5.94, total $53.46. Beside it, the steps: prices looked up by chinook-analyst, numbers checked by quote-reviewer, and the draft reply paused for Jane to approve, edit, or reject. Below, the evaluators that check every quote: quote_accuracy, tool_call_order, and draft_quality.">
+</p>
+
+<p align="center"><sub>
+  Illustration of a quote at the approval step, priced from <code>data/chinook.db</code>.
+  In the app, the draft appears as an approval card in the chat.
+</sub></p>
+
 ### 2. Get a territory report
 
 > Give me a territory report for my accounts.
@@ -225,6 +235,16 @@ created.
 The agent gathers the numbers, writes a Markdown report, then writes and runs
 a Python script in the sandbox to draw a pie chart. The chart appears in the
 chat, and both files can be downloaded from the sandbox files panel.
+
+<p align="center">
+  <img src="docs/assets/territory-board.svg" width="100%"
+       alt="Territory overview for Jane Peacock: 24 customers (21 have purchased), $833.04 lifetime revenue, 146 invoices, $5.71 average invoice. A bar chart of revenue by year from 2021 to 2025 peaks at $221.92 in 2022. A genre mix donut: Rock 36%, Latin 17%, Metal 10%, Alternative and Punk 8%, other genres 29%. The top five customers by revenue, led by Ladislav Kovács and Hugh O'Reilly at $45.62 each. Two writes wait for approval: add_customer for Priya Raman and a quote draft. A sidebar lists the four specialists and three playbooks.">
+</p>
+
+<p align="center"><sub>
+  Illustration of the figures the territory-report playbook gathers, drawn from Jane's
+  real accounts in <code>data/chinook.db</code>.
+</sub></p>
 
 ### 3. Create the newsletter (needs Tavily)
 
@@ -273,21 +293,55 @@ on every push and pull request.
 project. A trace shows every model call, tool call, subagent call, and
 approval.
 
-**Evaluations.** Build a LangSmith dataset from representative tasks and
-observed traces, then add `question` to each example's inputs and optional
-`required_tools` and `required_facts` lists to its outputs. Tool names should
-come from real traces; required facts are checked as case-insensitive literal
-text in the final answer. Run the local LangGraph server first, then evaluate:
+**Evaluations.** The regression dataset lives in
+[`evals/dataset.jsonl`](evals/dataset.jsonl), one example per line: a
+`question` in `inputs`, a unique `case` in `metadata`, and any of these
+expectations in `outputs`:
+
+| Expectation | Evaluator | Passes when |
+|---|---|---|
+| `required_tools` | `required_tools` | every listed tool appears in the trace |
+| `required_facts` | `required_facts` | every listed string appears in the final answer (case-insensitive) |
+| `pending_action` | `expected_pending_action` | the run paused for approval of that tool, with args containing the given values |
+| `quote` | `quote_accuracy` | the draft (or answer) has the grand total priced from `chinook.db`, with the 10% discount at 50+ tracks, give or take a cent |
+| *(every run)* | `tool_call_order` | before `add_customer`, the customer was searched for and isn't already in the database; before a priced draft, quote-reviewer checked it |
+| *(every run)* | `draft_quality` | LLM-as-judge: the draft passes the rfq-quote checklist (itemized, discount, total, next step, tone, no overpromising); scored as the fraction passed |
+
+A run stops at the first approval gate and the evaluation never resumes it,
+so `add_customer` and `mail_create_draft` never run: no customers are added
+and no drafts are saved. The tool call waiting for approval is recorded and
+scored instead, which is how a quote gets checked before Jane would see it.
+Evaluators score examples without their expectation as "not applicable"
+rather than as a pass.
+
+Sync the file to LangSmith (examples are matched by `case`, so edits update
+them in place and nothing is deleted), start the app with `./start.sh`, then
+evaluate:
 
 ```bash
+uv run python evals/upload_dataset.py
 uv run python evaluations.py --dataset deep-sales-assistant-regression
 ```
 
-The experiment records the final answer and tool calls observed from streamed
-graph and subgraph events, then scores tool selection and required facts
-separately. Review low-scoring examples and their LangSmith traces, update the
-agent or dataset, and rerun the experiment to check for regressions. Use
-`--url` or `LANGGRAPH_URL` if the server is not at `http://127.0.0.1:2024`.
+Each example runs 3 times by default (`--repetitions`), since an agent can
+pass once and fail the next time. Every experiment records the git SHA,
+whether there were uncommitted changes, both model names, and an
+`agent_fingerprint`: a hash of the agent's code, prompts, and skills, so two
+experiments with the same fingerprint ran the same agent. Use
+`--no-judge` to skip the model-graded check.
+
+To decide whether a change is better (a prompt edit, or chinook-analyst on
+Sonnet instead of Haiku), run one experiment per version with a telling
+`--experiment-prefix`, then have a judge pick the better reply for each
+example, with the order randomized:
+
+```bash
+uv run python evals/compare.py <experiment-a> <experiment-b>
+```
+
+Review low-scoring examples and their LangSmith traces, update the agent or
+dataset, and rerun the experiment to check for regressions. Use `--url` or
+`LANGGRAPH_URL` if the server is not at `http://127.0.0.1:2024`.
 
 **Switching models.** Edit `models.py`. `model` is used by the lighter
 subagents and `strong_model` by the main agent and quote-reviewer. Any
@@ -385,6 +439,10 @@ deep-sales-assistant/
 ├── mail_server/              # Mock mail MCP server + sample email
 ├── data/chinook.db           # Sample music-store database
 ├── ui/                       # Chat UI (modified agent-chat-ui)
+├── evaluations.py            # LangSmith evaluation runner and evaluators
+├── evals/                    # Regression dataset, upload and compare scripts
+├── docs/                     # Tutorial chapters and README images
+│   └── assets/               # make_*.py regenerate the SVGs from the data
 ├── tests/                    # pytest suite (no API keys needed)
 ├── .github/workflows/ci.yml  # Lint, test, and UI build on every push
 ├── langgraph.json            # Graphs the LangGraph server loads
