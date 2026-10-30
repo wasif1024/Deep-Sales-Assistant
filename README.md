@@ -273,21 +273,55 @@ on every push and pull request.
 project. A trace shows every model call, tool call, subagent call, and
 approval.
 
-**Evaluations.** Build a LangSmith dataset from representative tasks and
-observed traces, then add `question` to each example's inputs and optional
-`required_tools` and `required_facts` lists to its outputs. Tool names should
-come from real traces; required facts are checked as case-insensitive literal
-text in the final answer. Run the local LangGraph server first, then evaluate:
+**Evaluations.** The regression dataset lives in
+[`evals/dataset.jsonl`](evals/dataset.jsonl), one example per line: a
+`question` in `inputs`, a unique `case` in `metadata`, and any of these
+expectations in `outputs`:
+
+| Expectation | Evaluator | Passes when |
+|---|---|---|
+| `required_tools` | `required_tools` | every listed tool appears in the trace |
+| `required_facts` | `required_facts` | every listed string appears in the final answer (case-insensitive) |
+| `pending_action` | `expected_pending_action` | the run paused for approval of that tool, with args containing the given values |
+| `quote` | `quote_accuracy` | the draft (or answer) has the grand total priced from `chinook.db`, with the 10% discount at 50+ tracks, give or take a cent |
+| *(every run)* | `tool_call_order` | before `add_customer`, the customer was searched for and isn't already in the database; before a priced draft, quote-reviewer checked it |
+| *(every run)* | `draft_quality` | LLM-as-judge: the draft passes the rfq-quote checklist (itemized, discount, total, next step, tone, no overpromising); scored as the fraction passed |
+
+A run stops at the first approval gate and the evaluation never resumes it,
+so `add_customer` and `mail_create_draft` never run: no customers are added
+and no drafts are saved. The tool call waiting for approval is recorded and
+scored instead, which is how a quote gets checked before Jane would see it.
+Evaluators score examples without their expectation as "not applicable"
+rather than as a pass.
+
+Sync the file to LangSmith (examples are matched by `case`, so edits update
+them in place and nothing is deleted), start the app with `./start.sh`, then
+evaluate:
 
 ```bash
+uv run python evals/upload_dataset.py
 uv run python evaluations.py --dataset deep-sales-assistant-regression
 ```
 
-The experiment records the final answer and tool calls observed from streamed
-graph and subgraph events, then scores tool selection and required facts
-separately. Review low-scoring examples and their LangSmith traces, update the
-agent or dataset, and rerun the experiment to check for regressions. Use
-`--url` or `LANGGRAPH_URL` if the server is not at `http://127.0.0.1:2024`.
+Each example runs 3 times by default (`--repetitions`), since an agent can
+pass once and fail the next time. Every experiment records the git SHA,
+whether there were uncommitted changes, both model names, and an
+`agent_fingerprint`: a hash of the agent's code, prompts, and skills, so two
+experiments with the same fingerprint ran the same agent. Use
+`--no-judge` to skip the model-graded check.
+
+To decide whether a change is better (a prompt edit, or chinook-analyst on
+Sonnet instead of Haiku), run one experiment per version with a telling
+`--experiment-prefix`, then have a judge pick the better reply for each
+example, with the order randomized:
+
+```bash
+uv run python evals/compare.py <experiment-a> <experiment-b>
+```
+
+Review low-scoring examples and their LangSmith traces, update the agent or
+dataset, and rerun the experiment to check for regressions. Use `--url` or
+`LANGGRAPH_URL` if the server is not at `http://127.0.0.1:2024`.
 
 **Switching models.** Edit `models.py`. `model` is used by the lighter
 subagents and `strong_model` by the main agent and quote-reviewer. Any
@@ -385,6 +419,8 @@ deep-sales-assistant/
 ├── mail_server/              # Mock mail MCP server + sample email
 ├── data/chinook.db           # Sample music-store database
 ├── ui/                       # Chat UI (modified agent-chat-ui)
+├── evaluations.py            # LangSmith evaluation runner and evaluators
+├── evals/                    # Regression dataset, upload and compare scripts
 ├── tests/                    # pytest suite (no API keys needed)
 ├── .github/workflows/ci.yml  # Lint, test, and UI build on every push
 ├── langgraph.json            # Graphs the LangGraph server loads
